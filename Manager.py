@@ -5,8 +5,8 @@ from communication import Communicator
 
 class Manager:
 
-    def __init__(self, server, input_topic, output_topic):
-        self.communicator = Communicator(server, "manager_consumers", input_topic, output_topic, 1.0)
+    def __init__(self, server, group_id, input_topic, output_topic):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -17,7 +17,11 @@ class Manager:
 
 
 if __name__ == '__main__':
-    manager = Manager(server='localhost:9092', input_topic='output', output_topic='output')
+    manager = Manager(
+        server='localhost:9092',
+        group_id='manager_consumers',
+        input_topic='output',
+        output_topic='output')
 
     def send_message():
         manager.produce('producer')
