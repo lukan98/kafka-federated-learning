@@ -6,14 +6,14 @@ from communication import Communicator
 class Manager:
 
     def __init__(self, server, group_id, input_topic, output_topic):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, 5)
 
     def produce(self, message):
         self.communicator.produce(message)
 
-    def consume(self):
-        message = self.communicator.consume()
-        print(message)
+    def consume(self, number_of_messages):
+        messages = self.communicator.consume(number_of_messages)
+        print(messages)
 
 
 if __name__ == '__main__':
@@ -27,9 +27,14 @@ if __name__ == '__main__':
         manager.produce('producer')
 
     def receive_message():
-        manager.consume()
+        manager.consume(5)
 
-    threads = [threading.Thread(target=send_message, daemon=False), threading.Thread(target=receive_message, daemon=False)]
+    threads = []
+    for _ in range(100):
+        threads.append(threading.Thread(target=send_message, daemon=False))
+
+    for _ in range(20):
+        threads.append(threading.Thread(target=receive_message, daemon=False))
 
     for th in threads:
         th.start()

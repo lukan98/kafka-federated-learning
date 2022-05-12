@@ -1,4 +1,5 @@
 import json
+import logging
 from constants import *
 from confluent_kafka import Consumer, Producer
 
@@ -8,11 +9,13 @@ def make_producer(server):
 
 
 def make_consumer(server, consumer_group_id, topic):
-    consumer = Consumer({
-        BOOTSTRAP_SERVER_KEY: server,
-        GROUP_ID_KEY: consumer_group_id,
-        OFFSET_RESET_KEY: 'earliest'
-    })
+    consumer = Consumer(
+        {
+            BOOTSTRAP_SERVER_KEY: server,
+            GROUP_ID_KEY: consumer_group_id,
+            OFFSET_RESET_KEY: 'earliest'
+        }
+    )
     consumer.subscribe([topic])
     return consumer
 
@@ -45,14 +48,19 @@ class Communicator:
         self.producer.produce(self.output_topic, serialize_message(message), callback=callback)
         self.producer.poll(self.polling_timeout)
 
-    def consume(self):
-        while True:
-            message = self.consumer.poll(self.polling_timeout)
+    def consume(self, number_of_messages):
+        messages = []
+        for i in range(number_of_messages):
+            while True:
+                message = self.consumer.poll(self.polling_timeout)
 
-            if message is None:
-                continue
-            if message.error():
-                print("Consumer error: {}".format(message.error()))
-                continue
+                if message is None:
+                    continue
+                if message.error():
+                    print("Consumer error: {}".format(message.error()))
+                    continue
 
-            return message.value().decode('utf-8')
+                print('Received message!')
+                messages.append(message.value().decode('utf-8'))
+                break
+        return messages
