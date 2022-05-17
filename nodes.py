@@ -1,4 +1,4 @@
-from communication import Communicator
+from communication import *
 from constants import *
 from confluent_kafka import KafkaException
 from confluent_kafka.admin import AdminClient
@@ -16,7 +16,7 @@ class Manager:
 
     def consume(self, number_of_messages):
         messages = self.communicator.consume(number_of_messages)
-        print(messages)
+        print(sum(messages))
 
 
 class Worker:

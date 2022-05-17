@@ -1,5 +1,5 @@
 import threading
-from components import Manager, Worker, Admin
+from nodes import Manager, Worker, Admin
 
 
 if __name__ == '__main__':
@@ -18,7 +18,9 @@ if __name__ == '__main__':
         manager.consume(number_of_workers)
 
     def worker_loop():
-        worker.produce('message')
+        worker.produce(1)
+
+
 
     manager = Manager(
         server=server,

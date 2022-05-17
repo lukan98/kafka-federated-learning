@@ -60,6 +60,6 @@ class Communicator:
                     continue
 
                 print('Received message!')
-                messages.append(message.value().decode('utf-8'))
+                messages.append(deserialize_message(message.value().decode('utf-8')))
                 break
         return messages
