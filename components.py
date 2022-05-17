@@ -7,8 +7,9 @@ from confluent_kafka.admin import NewTopic
 
 class Manager:
 
-    def __init__(self, server, group_id, input_topic, output_topic):
+    def __init__(self, server, group_id, input_topic, output_topic, run_function):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
+        self.run = run_function
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -20,15 +21,16 @@ class Manager:
 
 class Worker:
 
-    def __init__(self, server, group_id, input_topic, output_topic):
+    def __init__(self, server, group_id, input_topic, output_topic, run_function):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
+        self.run = run_function
 
     def produce(self, message):
         self.communicator.produce(message)
 
     def consume(self, number_of_messages):
-        message = self.communicator.consume(number_of_messages)
-        print(message)
+        messages = self.communicator.consume(number_of_messages)
+        print(messages)
 
 
 class Admin:
