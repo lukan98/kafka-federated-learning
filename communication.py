@@ -20,7 +20,6 @@ def make_consumer(server, consumer_group_id, topic):
     return consumer
 
 
-# TODO: Figure out (de)serialization
 def serialize_message(message):
     if isinstance(message, np.ndarray):
         message = message.tolist()
