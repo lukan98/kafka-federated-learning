@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from constants import *
 from confluent_kafka import Consumer, Producer
 
@@ -21,10 +22,14 @@ def make_consumer(server, consumer_group_id, topic):
 
 # TODO: Figure out (de)serialization
 def serialize_message(message):
+    if isinstance(message, np.ndarray):
+        message = message.tolist()
     return json.dumps(message)
 
 
 def deserialize_message(message):
+    if isinstance(message, list):
+        message = np.array(message)
     return json.loads(message)
 
 

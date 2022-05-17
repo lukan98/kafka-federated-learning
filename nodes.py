@@ -3,6 +3,7 @@ from constants import *
 from confluent_kafka import KafkaException
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.admin import NewTopic
+import numpy as np
 
 
 class Manager:
@@ -16,7 +17,7 @@ class Manager:
 
     def consume(self, number_of_messages):
         messages = self.communicator.consume(number_of_messages)
-        print(sum(messages))
+        print(np.sum(messages))
 
 
 class Worker:

@@ -1,4 +1,5 @@
 import threading
+import numpy as np
 from nodes import Manager, Worker, Admin
 
 
@@ -9,18 +10,21 @@ if __name__ == '__main__':
     worker_parameters_topic = 'worker-parameters-topic'
     manager_parameters_topic = 'manager-parameters-topic'
     number_of_workers = 100
+    number_of_partitions = 10
+    replication_factor = 3
 
     admin = Admin(server=server)
 
-    admin.create_topics([worker_parameters_topic, manager_parameters_topic], 3, 1)
+    admin.create_topics(
+        [worker_parameters_topic, manager_parameters_topic],
+        number_of_partitions,
+        replication_factor)
 
     def manager_loop():
         manager.consume(number_of_workers)
 
     def worker_loop():
-        worker.produce(1)
-
-
+        worker.produce(np.ones(2))
 
     manager = Manager(
         server=server,
