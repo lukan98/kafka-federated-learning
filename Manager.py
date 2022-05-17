@@ -6,7 +6,7 @@ from communication import Communicator
 class Manager:
 
     def __init__(self, server, group_id, input_topic, output_topic):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, 5)
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
 
     def produce(self, message):
         self.communicator.produce(message)
