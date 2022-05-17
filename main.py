@@ -1,21 +1,30 @@
-import sys
-
-from confluent_kafka import Producer
-
-
-def delivery_callback(error, message):
-    if error:
-        sys.stderr.write('Message delivery failed!')
-    if message:
-        sys.stdout.write(
-            f'Message delivery successful with: {message.topic()}, {message.partition()}, {message.offset()}')
+import threading
+from components import Manager, Worker
 
 
 if __name__ == '__main__':
-    producer = Producer({'bootstrap.servers': 'localhost:9092'})
-    topic = "test"
+    manager = Manager(
+        server='localhost:9092',
+        group_id='manager_consumers',
+        input_topic='output',
+        output_topic='output')
 
-    producer.produce(topic, "Test value", callback=delivery_callback)
+    def send_message():
+        manager.produce('producer')
 
-    producer.poll(0)
-    producer.flush()
+    def receive_message():
+        manager.consume(5)
+
+    threads = []
+    for _ in range(100):
+        threads.append(threading.Thread(target=send_message, daemon=False))
+
+    for _ in range(20):
+        threads.append(threading.Thread(target=receive_message, daemon=False))
+
+    for th in threads:
+        th.start()
+
+    for th in threads:
+        th.join()
+

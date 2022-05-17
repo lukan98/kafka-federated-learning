@@ -1,7 +1,34 @@
+from communication import Communicator
 from constants import *
 from confluent_kafka import KafkaException
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.admin import NewTopic
+
+
+class Manager:
+
+    def __init__(self, server, group_id, input_topic, output_topic):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
+
+    def produce(self, message):
+        self.communicator.produce(message)
+
+    def consume(self, number_of_messages):
+        messages = self.communicator.consume(number_of_messages)
+        print(messages)
+
+
+class Worker:
+
+    def __init__(self, server, group_id, input_topic, output_topic):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
+
+    def produce(self, message):
+        self.communicator.produce(message)
+
+    def consume(self, number_of_messages):
+        message = self.communicator.consume(number_of_messages)
+        print(message)
 
 
 class Admin:
@@ -29,11 +56,3 @@ class Admin:
                 print(f'Topic {topic_name} successfully deleted!')
             except KafkaException:
                 print(f'Failed to delete topic {topic_name}')
-
-
-if __name__ == '__main__':
-    admin = Admin('localhost:9092')
-
-    admin.create_topics(['input', 'output'], 3, 1)
-
-    admin.delete_topics(['input', 'output'])
