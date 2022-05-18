@@ -6,7 +6,7 @@ from nodes import Manager, Worker, Admin
 
 
 def setup_server(server_name):
-    admin = Admin(server=server)
+    admin = Admin(server=server_name)
     admin.delete_topics([worker_parameters_topic, manager_parameters_topic])
     time.sleep(1)
     admin.create_topics(
