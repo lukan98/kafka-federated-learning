@@ -5,33 +5,50 @@ from confluent_kafka.admin import AdminClient
 from confluent_kafka.admin import NewTopic
 import numpy as np
 
+POLLING_TIMEOUT = 1
+
 
 class Manager:
 
-    def __init__(self, server, group_id, input_topic, output_topic, run_function):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
-        self.run = run_function
+    def __init__(self, server, group_id, input_topic, output_topic, number_of_iterations, number_of_workers):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, POLLING_TIMEOUT)
+        self.number_of_iterations = number_of_iterations
+        self.number_of_workers = number_of_workers
 
     def produce(self, message):
         self.communicator.produce(message)
 
     def consume(self, number_of_messages):
-        messages = self.communicator.consume(number_of_messages)
-        print(np.sum(messages))
+        return self.communicator.consume(number_of_messages)
+
+    def run(self):
+        for iteration in range(self.number_of_iterations):
+            messages = self.consume(self.number_of_workers)
+            aggregation = np.sum(messages)
+
+            print(f'Iteration {iteration} result: {aggregation}')
+
+            self.produce(aggregation)
 
 
 class Worker:
 
-    def __init__(self, server, group_id, input_topic, output_topic, run_function):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, 1.0)
-        self.run = run_function
+    def __init__(self, server, group_id, input_topic, output_topic, number_of_iterations, data):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, POLLING_TIMEOUT)
+        self.number_of_iterations = number_of_iterations
+        self.data = data
 
     def produce(self, message):
         self.communicator.produce(message)
 
     def consume(self, number_of_messages):
-        messages = self.communicator.consume(number_of_messages)
-        print(messages)
+        return self.communicator.consume(number_of_messages)
+
+    def run(self):
+        for iteration in range(self.number_of_iterations):
+            self.produce(self.data)
+            message = self.consume(1)
+            self.data = message
 
 
 class Admin:

@@ -45,8 +45,6 @@ class Communicator:
         def callback(err, msg):
             if err is not None:
                 print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
-            else:
-                print("Message produced: %s" % (str(msg)))
 
         self.producer.produce(self.output_topic, serialize_message(message), callback=callback)
         self.producer.poll(self.polling_timeout)
@@ -63,7 +61,6 @@ class Communicator:
                     print("Consumer error: {}".format(message.error()))
                     continue
 
-                print('Received message!')
                 messages.append(deserialize_message(message.value().decode('utf-8')))
                 break
         return messages

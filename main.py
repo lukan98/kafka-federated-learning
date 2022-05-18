@@ -1,6 +1,18 @@
 import threading
+import time
+
 import numpy as np
 from nodes import Manager, Worker, Admin
+
+
+def setup_server(server_name):
+    admin = Admin(server=server)
+    admin.delete_topics([worker_parameters_topic, manager_parameters_topic])
+    time.sleep(1)
+    admin.create_topics(
+        [worker_parameters_topic, manager_parameters_topic],
+        number_of_partitions,
+        replication_factor)
 
 
 if __name__ == '__main__':
@@ -9,38 +21,30 @@ if __name__ == '__main__':
     worker_group_id = 'worker-consumers'
     worker_parameters_topic = 'worker-parameters-topic'
     manager_parameters_topic = 'manager-parameters-topic'
-    number_of_workers = 100
-    number_of_partitions = 10
-    replication_factor = 3
+    number_of_iterations = 10
+    number_of_workers = 10
+    number_of_partitions = 1
+    replication_factor = 1
 
-    admin = Admin(server=server)
-
-    admin.create_topics(
-        [worker_parameters_topic, manager_parameters_topic],
-        number_of_partitions,
-        replication_factor)
-
-    def manager_loop():
-        manager.consume(number_of_workers)
-
-    def worker_loop():
-        worker.produce(np.ones(2))
+    setup_server(server)
 
     manager = Manager(
         server=server,
         group_id=manager_group_id,
         input_topic=worker_parameters_topic,
         output_topic=manager_parameters_topic,
-        run_function=manager_loop)
+        number_of_iterations=number_of_iterations,
+        number_of_workers=number_of_workers)
 
     workers = []
-    for _ in range(number_of_workers):
+    for worker_index in range(number_of_workers):
         workers.append(Worker(
             server=server,
-            group_id=worker_group_id,
+            group_id=worker_group_id + str(worker_index),
             input_topic=manager_parameters_topic,
             output_topic=worker_parameters_topic,
-            run_function=worker_loop))
+            number_of_iterations=number_of_iterations,
+            data=np.ones(1)))
 
     threads = [threading.Thread(target=manager.run, daemon=False)]
 
@@ -52,5 +56,3 @@ if __name__ == '__main__':
 
     for th in threads:
         th.join()
-
-    admin.delete_topics([worker_parameters_topic, manager_parameters_topic])
