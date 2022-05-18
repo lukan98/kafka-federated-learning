@@ -25,6 +25,7 @@ if __name__ == '__main__':
     number_of_workers = 10
     number_of_partitions = 1
     replication_factor = 1
+    polling_timeout = 1
 
     setup_server(server)
 
@@ -34,7 +35,8 @@ if __name__ == '__main__':
         input_topic=worker_parameters_topic,
         output_topic=manager_parameters_topic,
         number_of_iterations=number_of_iterations,
-        number_of_workers=number_of_workers)
+        number_of_workers=number_of_workers,
+        polling_timeout=polling_timeout)
 
     workers = []
     for worker_index in range(number_of_workers):
@@ -44,7 +46,8 @@ if __name__ == '__main__':
             input_topic=manager_parameters_topic,
             output_topic=worker_parameters_topic,
             number_of_iterations=number_of_iterations,
-            data=np.ones(1)))
+            data=np.ones(1),
+            polling_timeout=polling_timeout))
 
     threads = [threading.Thread(target=manager.run, daemon=False)]
 

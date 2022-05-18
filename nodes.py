@@ -5,13 +5,20 @@ from confluent_kafka.admin import AdminClient
 from confluent_kafka.admin import NewTopic
 import numpy as np
 
-POLLING_TIMEOUT = 1
-
 
 class Manager:
 
-    def __init__(self, server, group_id, input_topic, output_topic, number_of_iterations, number_of_workers):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, POLLING_TIMEOUT)
+    def __init__(
+            self,
+            server,
+            group_id,
+            input_topic,
+            output_topic,
+            number_of_iterations,
+            number_of_workers,
+            polling_timeout
+    ):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.number_of_workers = number_of_workers
 
@@ -33,8 +40,17 @@ class Manager:
 
 class Worker:
 
-    def __init__(self, server, group_id, input_topic, output_topic, number_of_iterations, data):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, POLLING_TIMEOUT)
+    def __init__(
+            self,
+            server,
+            group_id,
+            input_topic,
+            output_topic,
+            number_of_iterations,
+            data,
+            polling_timeout
+    ):
+        self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.data = data
 
