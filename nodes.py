@@ -32,9 +32,7 @@ class Manager:
         for iteration in range(self.number_of_iterations):
             messages = self.consume(self.number_of_workers)
             aggregation = np.sum(messages)
-
             print(f'Iteration {iteration} result: {aggregation}')
-
             self.produce(aggregation)
 
 

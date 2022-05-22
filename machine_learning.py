@@ -2,20 +2,20 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from functools import reduce
 
 
 def aggregate_parameters(parameters):
-    pass
+    return reduce(sum_parameters, parameters)
 
 
 def sum_parameters(parameters_a, parameters_b):
     if len(parameters_a) != len(parameters_b):
-        raise ValueError('The parameter lists must be of the same lenght! (Check hidden layer counts)')
+        raise ValueError('The parameter lists must be of the same length! (Check hidden layer counts)')
 
     parameter_sum = []
     for i in range(len(parameters_a)):
         parameter_sum.append(np.add(parameters_a[i], parameters_b[i]))
-
     return parameter_sum
 
 
@@ -66,9 +66,9 @@ if __name__ == '__main__':
     classifier2 = IrisClassifier()
     classifier2.fit(X_test, y_test)
 
-    print(classifier1.get_intercepts())
-    print(classifier2.get_intercepts())
+    print(classifier1.get_coefficients())
 
-    print(sum_parameters(classifier1.get_intercepts(), classifier2.get_intercepts()))
+    coefficients = aggregate_parameters([classifier2.get_coefficients(), classifier1.get_coefficients()])
+    classifier1.set_coefficients(coefficients)
 
 
