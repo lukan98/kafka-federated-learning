@@ -5,11 +5,10 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from functools import reduce
 
-import communication
-
 
 def aggregate_parameters(parameters):
-    return reduce(sum_parameters, parameters)
+    parameter_sum = np.asarray(reduce(sum_parameters, parameters), dtype=object)
+    return np.divide(parameter_sum, len(parameters))
 
 
 def sum_parameters(parameters_a, parameters_b):

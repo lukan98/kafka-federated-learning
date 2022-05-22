@@ -1,9 +1,10 @@
+import numpy as np
+from machine_learning import *
 from communication import *
 from constants import *
 from confluent_kafka import KafkaException
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.admin import NewTopic
-import numpy as np
 
 
 class Manager:
@@ -16,11 +17,17 @@ class Manager:
             output_topic,
             number_of_iterations,
             number_of_workers,
-            polling_timeout
+            polling_timeout,
+            model,
+            X,
+            y
     ):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.number_of_workers = number_of_workers
+        self.model = model
+        self.X = X
+        self.y = y
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -30,10 +37,19 @@ class Manager:
 
     def run(self):
         for iteration in range(self.number_of_iterations):
-            messages = self.consume(self.number_of_workers)
-            aggregation = np.sum(messages)
-            print(f'Iteration {iteration} result: {aggregation}')
-            self.produce(aggregation)
+            parameters = self.consume(self.number_of_workers)
+            coefficients = list(map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0], parameters))
+            intercepts = list(map(lambda parameter_dict: deserialize_parameters(parameter_dict)[1], parameters))
+
+            aggregated_coefficients = aggregate_parameters(coefficients)
+            aggregated_intercepts = aggregate_parameters(intercepts)
+
+            print(f'Iteration {iteration}\n'
+                  f'Number of messages: {len(coefficients)}\n'
+                  f'Coefficients: {aggregated_coefficients}\n'
+                  f'Intercepts: {aggregated_intercepts}\n')
+
+            self.produce(serialize_parameters(aggregated_coefficients, aggregated_intercepts))
 
 
 class Worker:
@@ -45,12 +61,16 @@ class Worker:
             input_topic,
             output_topic,
             number_of_iterations,
-            data,
-            polling_timeout
+            polling_timeout,
+            model,
+            X,
+            y
     ):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
-        self.data = data
+        self.model = model
+        self.X = X
+        self.y = y
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -60,9 +80,20 @@ class Worker:
 
     def run(self):
         for iteration in range(self.number_of_iterations):
-            self.produce(self.data)
-            message = self.consume(1)
-            self.data = message
+            self.model.fit(X=self.X, y=self.y)
+            coefficients = self.model.get_coefficients()
+            intercepts = self.model.get_intercepts()
+
+            print(f'Worker parameters\n'
+                  f'Coefficients: {coefficients}\n'
+                  f'Intercepts: {intercepts}\n')
+            parameters = serialize_parameters(coefficients, intercepts)
+            self.produce(parameters)
+
+            aggregated_parameters = self.consume(1)[0]
+            aggregated_coefficients, aggregated_intercepts = deserialize_parameters(aggregated_parameters)
+            self.model.set_coefficients(aggregated_coefficients)
+            self.model.set_intercepts(aggregated_intercepts)
 
 
 class Admin:
