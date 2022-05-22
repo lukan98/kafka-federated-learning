@@ -1,8 +1,11 @@
 import numpy as np
+from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from functools import reduce
+
+import communication
 
 
 def aggregate_parameters(parameters):
@@ -17,6 +20,19 @@ def sum_parameters(parameters_a, parameters_b):
     for i in range(len(parameters_a)):
         parameter_sum.append(np.add(parameters_a[i], parameters_b[i]))
     return parameter_sum
+
+
+def serialize_parameters(coefficients, intercepts):
+    return {
+        COEFFICIENTS_KEY: [array.tolist() for array in coefficients],
+        INTERCEPTS_KEY: [array.tolist() for array in intercepts]
+    }
+
+
+def deserialize_parameters(parameter_dictionary):
+    coefficients = [np.array(array) for array in parameter_dictionary[COEFFICIENTS_KEY]]
+    intercepts = [np.array(array) for array in parameter_dictionary[INTERCEPTS_KEY]]
+    return coefficients, intercepts
 
 
 class IrisClassifier:
@@ -63,12 +79,8 @@ if __name__ == '__main__':
     classifier1 = IrisClassifier()
     classifier1.fit(X_train, y_train)
 
-    classifier2 = IrisClassifier()
-    classifier2.fit(X_test, y_test)
+    serialized = serialize_parameters(classifier1.get_coefficients(), classifier1.get_intercepts())
+    coefficients, intercepts = deserialize_parameters(serialized)
 
-    print(classifier1.get_coefficients())
-
-    coefficients = aggregate_parameters([classifier2.get_coefficients(), classifier1.get_coefficients()])
-    classifier1.set_coefficients(coefficients)
-
-
+    print(coefficients)
+    print(intercepts)

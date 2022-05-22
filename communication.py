@@ -21,14 +21,10 @@ def make_consumer(server, consumer_group_id, topic):
 
 
 def serialize_message(message):
-    if isinstance(message, np.ndarray):
-        message = message.tolist()
     return json.dumps(message)
 
 
 def deserialize_message(message):
-    if isinstance(message, list):
-        message = np.array(message)
     return json.loads(message)
 
 
