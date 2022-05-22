@@ -1,11 +1,27 @@
+import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
 
+def aggregate_parameters(parameters):
+    pass
+
+
+def sum_parameters(parameters_a, parameters_b):
+    if len(parameters_a) != len(parameters_b):
+        raise ValueError('The parameter lists must be of the same lenght! (Check hidden layer counts)')
+
+    parameter_sum = []
+    for i in range(len(parameters_a)):
+        parameter_sum.append(np.add(parameters_a[i], parameters_b[i]))
+
+    return parameter_sum
+
+
 class IrisClassifier:
 
-    def __init__(self, verbose):
+    def __init__(self, verbose=False):
         self.model = MLPClassifier(
             hidden_layer_sizes=(3, 3),
             activation='relu',
@@ -24,19 +40,35 @@ class IrisClassifier:
     def score(self, X, y):
         return self.model.score(X, y)
 
-    def get_parameters(self):
-        return self.model.get_params()
+    def get_coefficients(self):
+        return self.model.coefs_
 
-    def set_parameters(self, parameters):
-        self.model.set_params(parameters)
+    def set_coefficients(self, coefficients):
+        self.model.coefs_ = coefficients
+
+    def get_intercepts(self):
+        return self.model.intercepts_
+
+    def set_intercepts(self, intercepts):
+        self.model.intercepts_ = intercepts
+
+    def get_number_of_layers(self):
+        return len(self.model.coefs_)
 
 
 if __name__ == '__main__':
     X, y = load_iris(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    classifier1 = IrisClassifier()
+    classifier1.fit(X_train, y_train)
 
-    classifier = IrisClassifier(verbose=True)
-    classifier.fit(X_train, y_train)
+    classifier2 = IrisClassifier()
+    classifier2.fit(X_test, y_test)
 
-    print(classifier.score(X_test, y_test))
+    print(classifier1.get_intercepts())
+    print(classifier2.get_intercepts())
+
+    print(sum_parameters(classifier1.get_intercepts(), classifier2.get_intercepts()))
+
+
