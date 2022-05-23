@@ -62,12 +62,14 @@ class Worker:
             output_topic,
             number_of_iterations,
             polling_timeout,
+            id,
             model,
             X,
             y
     ):
-        self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
+        self.communicator = Communicator(server, group_id + str(id), input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
+        self.id = id
         self.model = model
         self.X = X
         self.y = y

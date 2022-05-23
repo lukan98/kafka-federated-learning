@@ -50,11 +50,12 @@ if __name__ == '__main__':
     for worker_index in range(number_of_workers):
         workers.append(Worker(
             server=server,
-            group_id=worker_group_id + str(worker_index),
+            group_id=worker_group_id,
             input_topic=manager_parameters_topic,
             output_topic=worker_parameters_topic,
             number_of_iterations=number_of_iterations,
             polling_timeout=polling_timeout,
+            id=worker_index,
             model=IrisClassifier(),
             X=X_train,
             y=y_train))
