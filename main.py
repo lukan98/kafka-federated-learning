@@ -23,7 +23,7 @@ if __name__ == '__main__':
     worker_group_id = 'worker-consumers'
     worker_parameters_topic = 'worker-parameters-topic'
     manager_parameters_topic = 'manager-parameters-topic'
-    number_of_iterations = 1
+    number_of_iterations = 5
     number_of_workers = 2
     number_of_partitions = 1
     replication_factor = 1
@@ -44,8 +44,7 @@ if __name__ == '__main__':
         polling_timeout=polling_timeout,
         model=IrisClassifier(),
         X=X_test,
-        y=y_test
-        )
+        y=y_test)
 
     workers = []
     for worker_index in range(number_of_workers):
@@ -58,8 +57,7 @@ if __name__ == '__main__':
             polling_timeout=polling_timeout,
             model=IrisClassifier(),
             X=X_train,
-            y=y_train
-        ))
+            y=y_train))
 
     threads = [threading.Thread(target=manager.run, daemon=False)]
 

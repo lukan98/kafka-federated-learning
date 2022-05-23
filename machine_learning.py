@@ -3,6 +3,7 @@ from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 from functools import reduce
 
 
@@ -38,9 +39,9 @@ class IrisClassifier:
 
     def __init__(self, verbose=False):
         self.model = MLPClassifier(
-            hidden_layer_sizes=(3, 3),
+            hidden_layer_sizes=(3, 4),
             activation='relu',
-            solver='sgd',
+            solver='adam',
             alpha=0.0001,
             learning_rate='constant',
             learning_rate_init=0.1,
@@ -54,6 +55,10 @@ class IrisClassifier:
 
     def score(self, X, y):
         return self.model.score(X, y)
+
+    def confusion_matrix(self, X, y_true):
+        y_predicted = self.predict(X)
+        return confusion_matrix(y_true, y_predicted)
 
     def get_coefficients(self):
         return self.model.coefs_
@@ -73,13 +78,10 @@ class IrisClassifier:
 
 if __name__ == '__main__':
     X, y = load_iris(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    classifier1 = IrisClassifier()
-    classifier1.fit(X_train, y_train)
+    classifier = IrisClassifier()
+    classifier.fit(X_train, y_train)
 
-    serialized = serialize_parameters(classifier1.get_coefficients(), classifier1.get_intercepts())
-    coefficients, intercepts = deserialize_parameters(serialized)
-
-    print(coefficients)
-    print(intercepts)
+    print(classifier.score(X_test, y_test))
+    print(classifier.confusion_matrix(X_test, y_test))
