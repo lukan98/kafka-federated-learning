@@ -2,9 +2,17 @@ import numpy as np
 from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from functools import reduce
+
+
+def split_dataset(X, y, number_of_workers, number_of_iterations):
+    number_of_samples = number_of_workers * number_of_iterations
+    dataset_size = len(X)
+    indices = np.arange(0, dataset_size)
+    np.random.shuffle(indices)
+    sampled_indices_array = np.array_split(indices, number_of_samples)
+    return [(X[sampled_indices], y[sampled_indices]) for sampled_indices in sampled_indices_array]
 
 
 def aggregate_parameters(parameters):
@@ -78,10 +86,6 @@ class IrisClassifier:
 
 if __name__ == '__main__':
     X, y = load_iris(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    classifier = IrisClassifier()
-    classifier.fit(X_train, y_train)
-
-    print(classifier.score(X_test, y_test))
-    print(classifier.confusion_matrix(X_test, y_test))
+    split = split_dataset(X, y, 2, 3)
+    print(split[0])
