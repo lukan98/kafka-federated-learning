@@ -64,15 +64,13 @@ class Worker:
             polling_timeout,
             id,
             model,
-            X,
-            y
+            training_data
     ):
         self.communicator = Communicator(server, group_id + str(id), input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.id = id
         self.model = model
-        self.X = X
-        self.y = y
+        self.training_data = training_data
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -82,7 +80,8 @@ class Worker:
 
     def run(self):
         for iteration in range(self.number_of_iterations):
-            self.model.fit(X=self.X, y=self.y)
+            X, y = self.training_data[iteration]
+            self.model.fit(X=X, y=y)
             coefficients = self.model.get_coefficients()
             intercepts = self.model.get_intercepts()
 
