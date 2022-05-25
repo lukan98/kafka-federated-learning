@@ -60,6 +60,9 @@ class IrisClassifier:
     def fit(self, X, y):
         self.model.fit(X, y)
 
+    def partial_fit(self, X, y):
+        self.model.partial_fit(X, y)
+
     def predict(self, X):
         return self.model.predict(X)
 

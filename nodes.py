@@ -36,6 +36,7 @@ class Manager:
         return self.communicator.consume(number_of_messages)
 
     def run(self):
+        self.model.fit(self.X, self.y)
         for iteration in range(self.number_of_iterations):
             parameters = self.consume(self.number_of_workers)
             coefficients = list(map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0], parameters))
@@ -44,10 +45,15 @@ class Manager:
             aggregated_coefficients = aggregate_parameters(coefficients)
             aggregated_intercepts = aggregate_parameters(intercepts)
 
-            print(f'Iteration {iteration}\n'
-                  f'Number of messages: {len(coefficients)}\n'
-                  f'Coefficients: {aggregated_coefficients}\n'
-                  f'Intercepts: {aggregated_intercepts}\n')
+            self.model.set_coefficients(aggregated_coefficients)
+            self.model.set_intercepts(aggregated_intercepts)
+
+            print(f'Iteration {iteration + 1}, score: {self.model.score(self.X, self.y)}')
+
+            # print(f'Iteration {iteration}\n'
+            #       f'Number of messages: {len(coefficients)}\n'
+            #       f'Coefficients: {aggregated_coefficients}\n'
+            #       f'Intercepts: {aggregated_intercepts}\n')
 
             self.produce(serialize_parameters(aggregated_coefficients, aggregated_intercepts))
 
@@ -81,13 +87,16 @@ class Worker:
     def run(self):
         for iteration in range(self.number_of_iterations):
             X, y = self.training_data[iteration]
-            self.model.fit(X=X, y=y)
+            if iteration == 0:
+                self.model.fit(X=X, y=y)
+            else:
+                self.model.partial_fit(X=X, y=y)
             coefficients = self.model.get_coefficients()
             intercepts = self.model.get_intercepts()
 
-            print(f'Worker parameters\n'
-                  f'Coefficients: {coefficients}\n'
-                  f'Intercepts: {intercepts}\n')
+            # print(f'Worker parameters\n'
+            #       f'Coefficients: {coefficients}\n'
+            #       f'Intercepts: {intercepts}\n')
             parameters = serialize_parameters(coefficients, intercepts)
             self.produce(parameters)
 
