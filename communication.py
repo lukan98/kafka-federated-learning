@@ -1,5 +1,4 @@
 import json
-import numpy as np
 from constants import *
 from confluent_kafka import Consumer, Producer
 

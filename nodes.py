@@ -1,4 +1,3 @@
-import numpy as np
 from machine_learning import *
 from communication import *
 from constants import *
