@@ -38,8 +38,12 @@ class Manager:
         self.model.fit(self.X, self.y)
         for iteration in range(self.number_of_iterations):
             parameters = self.consume(self.number_of_workers)
-            coefficients = list(map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0], parameters))
-            intercepts = list(map(lambda parameter_dict: deserialize_parameters(parameter_dict)[1], parameters))
+            coefficients = list(
+                map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0],
+                    parameters))
+            intercepts = list(
+                map(lambda parameter_dict: deserialize_parameters(parameter_dict)[1],
+                    parameters))
 
             aggregated_coefficients = aggregate_parameters(coefficients)
             aggregated_intercepts = aggregate_parameters(intercepts)
@@ -47,14 +51,13 @@ class Manager:
             self.model.set_coefficients(aggregated_coefficients)
             self.model.set_intercepts(aggregated_intercepts)
 
-            print(f'Iteration {iteration + 1}, score: {self.model.score(self.X, self.y)}')
+            print(f'Iteration {iteration + 1},'
+                  f'score: {self.model.score(self.X, self.y)}')
 
-            # print(f'Iteration {iteration}\n'
-            #       f'Number of messages: {len(coefficients)}\n'
-            #       f'Coefficients: {aggregated_coefficients}\n'
-            #       f'Intercepts: {aggregated_intercepts}\n')
-
-            self.produce(serialize_parameters(aggregated_coefficients, aggregated_intercepts))
+            self.produce(
+                serialize_parameters(
+                    aggregated_coefficients,
+                    aggregated_intercepts))
 
 
 class Worker:
@@ -93,16 +96,19 @@ class Worker:
             coefficients = self.model.get_coefficients()
             intercepts = self.model.get_intercepts()
 
-            # print(f'Worker parameters\n'
-            #       f'Coefficients: {coefficients}\n'
-            #       f'Intercepts: {intercepts}\n')
-            parameters = serialize_parameters(coefficients, intercepts)
+            parameters = serialize_parameters(
+                coefficients,
+                intercepts)
             self.produce(parameters)
 
             aggregated_parameters = self.consume(1)[0]
-            aggregated_coefficients, aggregated_intercepts = deserialize_parameters(aggregated_parameters)
-            self.model.set_coefficients(aggregated_coefficients)
-            self.model.set_intercepts(aggregated_intercepts)
+            aggregated_coefficients, aggregated_intercepts = \
+                deserialize_parameters(
+                    aggregated_parameters)
+            self.model.set_coefficients(
+                aggregated_coefficients)
+            self.model.set_intercepts(
+                aggregated_intercepts)
 
 
 class Admin:
@@ -112,7 +118,11 @@ class Admin:
 
     def create_topics(self, topic_names, number_of_partitions, replication_factor):
         futures = self.admin_client.create_topics(
-            [NewTopic(topic_name, number_of_partitions, replication_factor) for topic_name in topic_names])
+            [NewTopic(
+                topic_name,
+                number_of_partitions,
+                replication_factor)
+                for topic_name in topic_names])
 
         for topic_name, future in futures.items():
             try:
