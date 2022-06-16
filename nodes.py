@@ -34,6 +34,9 @@ class Manager:
     def consume(self, number_of_messages):
         return self.communicator.consume(number_of_messages)
 
+    def get_classification_report(self):
+        return self.model.get_classification_report(self.X, self.y)
+
     def run(self):
         self.model.fit(self.X, self.y)
         for iteration in range(self.number_of_iterations):
@@ -72,13 +75,17 @@ class Worker:
             polling_timeout,
             id,
             model,
-            training_data
+            training_data,
+            X_test,
+            y_test
     ):
         self.communicator = Communicator(server, group_id + str(id), input_topic, output_topic, polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.id = id
         self.model = model
         self.training_data = training_data
+        self.X_test = X_test
+        self.y_test = y_test
 
     def produce(self, message):
         self.communicator.produce(message)
@@ -87,12 +94,11 @@ class Worker:
         return self.communicator.consume(number_of_messages)
 
     def run(self):
+        self.model.fit(X=self.X_test, y=self.y_test)
         for iteration in range(self.number_of_iterations):
             X, y = self.training_data[iteration]
-            if iteration == 0:
-                self.model.fit(X=X, y=y)
-            else:
-                self.model.partial_fit(X=X, y=y)
+
+            self.model.partial_fit(X=X, y=y)
             coefficients = self.model.get_coefficients()
             intercepts = self.model.get_intercepts()
 

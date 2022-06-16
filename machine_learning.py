@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import time
 from sklearn.model_selection import train_test_split
 from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
@@ -140,7 +140,16 @@ if __name__ == '__main__':
     X, y = load_digits(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
+    datasets = split_dataset(X_train, y_train, 100, 10)
+    print(len(datasets[0][0]))
+
+    start_time = time.time()
+
     model = DigitClassifier()
     model.fit(X_train, y_train)
+
+    end_time = time.time()
+
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     print(model.get_classification_report(X_test, y_test))
