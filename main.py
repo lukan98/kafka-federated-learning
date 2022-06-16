@@ -3,7 +3,7 @@ import time
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from nodes import Manager, Worker, Admin
-from machine_learning import IrisClassifier, split_dataset, MNISTClassifier
+from machine_learning import IrisClassifier, split_dataset, DigitClassifier
 
 
 def setup_server(server_name):
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         number_of_iterations=number_of_iterations,
         number_of_workers=number_of_workers,
         polling_timeout=polling_timeout,
-        model=MNISTClassifier(),
+        model=DigitClassifier(),
         X=X_test,
         y=y_test)
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
             number_of_iterations=number_of_iterations,
             polling_timeout=polling_timeout,
             id=worker_index,
-            model=MNISTClassifier(),
+            model=DigitClassifier(),
             training_data=training_samples[worker_index * number_of_iterations:(worker_index + 1) * number_of_iterations]))
 
     threads = [threading.Thread(target=manager.run, daemon=False)]

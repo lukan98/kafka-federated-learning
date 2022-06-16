@@ -1,10 +1,10 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-
 from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
-from sklearn.datasets import load_iris, load_digits
-from sklearn.metrics import confusion_matrix
+from sklearn.datasets import load_digits
+from sklearn.metrics import confusion_matrix, classification_report
 from functools import reduce
 
 
@@ -89,13 +89,13 @@ class IrisClassifier:
         return len(self.model.coefs_)
 
 
-class MNISTClassifier():
+class DigitClassifier():
 
     def __init__(self):
         self.model = MLPClassifier(
             hidden_layer_sizes=(40,),
             activation='logistic',
-            solver='adam',
+            solver='sgd',
             alpha=1e-4,
             learning_rate='constant',
             learning_rate_init=0.2)
@@ -131,13 +131,16 @@ class MNISTClassifier():
     def get_number_of_layers(self):
         return len(self.model.coefs_)
 
+    def get_classification_report(self, X_test, y_test):
+        y_pred = self.predict(X_test)
+        return classification_report(y_test, y_pred)
+
 
 if __name__ == '__main__':
     X, y = load_digits(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
-    model = MNISTClassifier()
+    model = DigitClassifier()
     model.fit(X_train, y_train)
 
-    print(model.score(X_test, y_test))
-    print(model.confusion_matrix(X_test, y_test))
+    print(model.get_classification_report(X_test, y_test))
