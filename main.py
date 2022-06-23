@@ -3,7 +3,7 @@ import time
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from nodes import Manager, Worker, Admin, DataProducer
-from machine_learning import split_dataset, DigitClassifier
+from machine_learning import cutoff_dataset, DigitClassifier
 
 
 def setup_server(server_name, topics):
@@ -28,8 +28,7 @@ if __name__ == '__main__':
 
     topics = [worker_parameters_topic, manager_parameters_topic]
 
-    number_of_iterations = 2
-    number_of_workers = 10
+    number_of_workers = 100
 
     number_of_partitions = 1
     replication_factor = 1
@@ -42,22 +41,21 @@ if __name__ == '__main__':
 
     X, y = load_digits(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
-    training_samples = split_dataset(X_train, y_train, number_of_workers, number_of_iterations)
+    X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
 
     data_producer = DataProducer(
         server=server,
         baseline_topic_name=worker_input_topic,
         number_of_workers=number_of_workers,
         polling_timeout=1.0,
-        X=X,
-        y=y)
+        X=X_train,
+        y=y_train)
 
     manager = Manager(
         server=server,
         group_id=manager_group_id,
         input_topic=worker_parameters_topic,
         output_topic=manager_parameters_topic,
-        number_of_iterations=number_of_iterations,
         number_of_workers=number_of_workers,
         polling_timeout=polling_timeout,
         model=DigitClassifier(),
@@ -72,12 +70,9 @@ if __name__ == '__main__':
             data_topic=worker_input_topic,
             input_topic=manager_parameters_topic,
             output_topic=worker_parameters_topic,
-            number_of_iterations=number_of_iterations,
             polling_timeout=polling_timeout,
             id=worker_index,
             model=DigitClassifier(),
-            training_data=training_samples[
-                          worker_index * number_of_iterations:(worker_index + 1) * number_of_iterations],
             X_test=X_test,
             y_test=y_test
         ))
@@ -97,3 +92,9 @@ if __name__ == '__main__':
 
     for th in threads:
         th.join()
+
+    end_time = time.time()
+
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    print(manager.get_classification_report())

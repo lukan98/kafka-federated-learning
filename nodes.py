@@ -26,12 +26,6 @@ class Manager:
         self.X = X
         self.y = y
 
-    def produce(self, message):
-        self.communicator.produce(message)
-
-    def consume(self, number_of_messages):
-        return self.communicator.consume(number_of_messages)
-
     def get_classification_report(self):
         return self.model.get_classification_report(self.X, self.y)
 
@@ -42,14 +36,17 @@ class Manager:
         best_score = 0
 
         while True:
-            parameters = self.consume(self.number_of_workers)
+            messages = self.communicator.consume(self.number_of_workers)
+
+            if all(map(lambda msg: msg == STOP_SIGNAL, messages)):
+                break
 
             coefficients = list(
-                map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0],
-                    parameters))
+                map(lambda dict: deserialize_parameters(dict)[0],
+                    messages))
             intercepts = list(
-                map(lambda parameter_dict: deserialize_parameters(parameter_dict)[1],
-                    parameters))
+                map(lambda dict: deserialize_parameters(dict)[1],
+                    messages))
 
             aggregated_coefficients = aggregate_parameters(coefficients)
             aggregated_intercepts = aggregate_parameters(intercepts)
@@ -70,7 +67,7 @@ class Manager:
             print(f'Iteration {iteration_counter} score: {score}')
             print(f'Best score: {best_score}')
 
-            self.produce(
+            self.communicator.produce(
                 serialize_parameters(
                     aggregated_coefficients,
                     aggregated_intercepts))
@@ -109,22 +106,17 @@ class Worker:
         self.X_test = X_test
         self.y_test = y_test
 
-    def produce(self, message):
-        self.communicator.produce(message)
-
-    def consume(self, number_of_messages):
-        return self.communicator.consume(number_of_messages)
-
-    def consume_data(self):
-        return self.data_consumer.consume()
-
     def run(self):
         self.model.fit(X=self.X_test, y=self.y_test)
         while True:
-            data_dict = self.consume_data()
+            data = self.data_consumer.consume()
 
-            X = np.array(data_dict['X']).reshape(1, -1)
-            y = np.ravel(np.array(data_dict['y']), order='c')
+            if data == STOP_SIGNAL:
+                self.communicator.produce(STOP_SIGNAL)
+                break
+
+            X = np.array(data['X']).reshape(1, -1)
+            y = np.ravel(np.array(data['y']), order='c')
             self.model.partial_fit(X=X, y=y)
 
             coefficients = self.model.get_coefficients()
@@ -133,9 +125,9 @@ class Worker:
             parameters = serialize_parameters(
                 coefficients,
                 intercepts)
-            self.produce(parameters)
+            self.communicator.produce(parameters)
 
-            aggregated_parameters = self.consume(1)[0]
+            aggregated_parameters = self.communicator.consume(1)[0]
             aggregated_coefficients, aggregated_intercepts = \
                 deserialize_parameters(
                     aggregated_parameters)
@@ -192,5 +184,11 @@ class DataProducer:
         for i in range(len(self.X)):
             worker_index = str(i % self.number_of_workers)
             data_dict = {'X': self.X[i].tolist(), 'y': self.y[i].tolist()}
-            self.producer.produce(data_dict, self.baseline_topic_name + '_' + worker_index)
-        #TODO: Add stop signal
+            self.producer.produce(
+                data_dict,
+                self.baseline_topic_name + '_' + worker_index)
+
+        for worker_index in range(self.number_of_workers):
+            self.producer.produce(
+                STOP_SIGNAL,
+                self.baseline_topic_name + '_' + str(worker_index))

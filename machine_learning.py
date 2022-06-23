@@ -8,13 +8,9 @@ from sklearn.metrics import confusion_matrix, classification_report
 from functools import reduce
 
 
-def split_dataset(X, y, number_of_workers, number_of_iterations):
-    number_of_samples = number_of_workers * number_of_iterations
-    dataset_size = len(X)
-    indices = np.arange(0, dataset_size)
-    np.random.shuffle(indices)
-    sampled_indices_array = np.array_split(indices, number_of_samples)
-    return [(X[sampled_indices], y[sampled_indices]) for sampled_indices in sampled_indices_array]
+def cutoff_dataset(X, y, number_of_workers):
+    new_length = len(X) - len(X) % number_of_workers
+    return X[:new_length], y[:new_length]
 
 
 def aggregate_parameters(parameters):
@@ -134,22 +130,3 @@ class DigitClassifier():
     def get_classification_report(self, X_test, y_test):
         y_pred = self.predict(X_test)
         return classification_report(y_test, y_pred)
-
-
-if __name__ == '__main__':
-    X, y = load_digits(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-    datasets = split_dataset(X_train, y_train, 100, 10)
-    print(len(datasets[0][0]))
-
-    start_time = time.time()
-
-    model = DigitClassifier()
-    model.fit(X_train, y_train)
-
-    end_time = time.time()
-
-    print("--- %s seconds ---" % (time.time() - start_time))
-
-    print(model.get_classification_report(X_test, y_test))
