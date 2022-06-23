@@ -69,6 +69,7 @@ class Worker:
             self,
             server,
             group_id,
+            data_topic,
             input_topic,
             output_topic,
             number_of_iterations,
@@ -79,7 +80,17 @@ class Worker:
             X_test,
             y_test
     ):
-        self.communicator = Communicator(server, group_id + str(id), input_topic, output_topic, polling_timeout)
+        self.communicator = Communicator(
+            server,
+            group_id + str(id),
+            input_topic,
+            output_topic,
+            polling_timeout)
+        self.data_consumer = FLConsumer(
+            server,
+            group_id + 'data' + str(id),
+            data_topic + '_' + str(id),
+            polling_timeout)
         self.number_of_iterations = number_of_iterations
         self.id = id
         self.model = model
@@ -93,28 +104,18 @@ class Worker:
     def consume(self, number_of_messages):
         return self.communicator.consume(number_of_messages)
 
+    def consume_data(self):
+        return self.data_consumer.consume()
+
     def run(self):
         self.model.fit(X=self.X_test, y=self.y_test)
-        for iteration in range(self.number_of_iterations):
-            X, y = self.training_data[iteration]
+        while True:
+            data_dict = self.consume_data()
 
-            self.model.partial_fit(X=X, y=y)
-            coefficients = self.model.get_coefficients()
-            intercepts = self.model.get_intercepts()
+            X = np.array(data_dict['X'])
+            y = np.array(data_dict['y'])
 
-            parameters = serialize_parameters(
-                coefficients,
-                intercepts)
-            self.produce(parameters)
-
-            aggregated_parameters = self.consume(1)[0]
-            aggregated_coefficients, aggregated_intercepts = \
-                deserialize_parameters(
-                    aggregated_parameters)
-            self.model.set_coefficients(
-                aggregated_coefficients)
-            self.model.set_intercepts(
-                aggregated_intercepts)
+            
 
 
 class Admin:
@@ -146,3 +147,19 @@ class Admin:
                 print(f'Topic {topic_name} successfully deleted!')
             except KafkaException:
                 print(f'Failed to delete topic {topic_name}')
+
+
+class DataProducer:
+
+    def __init__(self, server, baseline_topic_name, number_of_workers, polling_timeout, X, y):
+        self.producer = FLProducer(server, polling_timeout)
+        self.baseline_topic_name = baseline_topic_name
+        self.number_of_workers = number_of_workers
+        self.X = X
+        self.y = y
+
+    def run(self):
+        for i in range(len(self.X)):
+            worker_index = str(i % self.number_of_workers)
+            data_dict = {'X': self.X[i].tolist(), 'y': self.y[i].tolist()}
+            self.producer.produce(data_dict, self.baseline_topic_name + '_' + worker_index)
