@@ -16,6 +16,14 @@ def setup_server(server_name, topics):
         replication_factor)
 
 
+def make_datasets(X, y, number_of_workers, test_size=0.2, initial_size=0.05):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_initial, y_train, y_initial = train_test_split(X_train, y_train, test_size=0.05)
+    X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
+
+    return X_train, X_test, X_initial, y_train, y_test, y_initial
+
+
 if __name__ == '__main__':
     server = 'localhost:9092'
 
@@ -28,7 +36,7 @@ if __name__ == '__main__':
 
     topics = [worker_parameters_topic, manager_parameters_topic]
 
-    number_of_workers = 100
+    number_of_workers = 5
 
     number_of_partitions = 1
     replication_factor = 1
@@ -40,9 +48,7 @@ if __name__ == '__main__':
     setup_server(server, topics)
 
     X, y = load_digits(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-    X_train, X_initial, y_train, y_initial = train_test_split(X_train, y_train, test_size=0.05)
-    X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
+    X_train, X_test, X_initial, y_train, y_test, y_initial = make_datasets(X, y, number_of_workers)
 
     data_producer = DataStream(
         server=server,
