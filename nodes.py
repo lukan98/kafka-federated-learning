@@ -14,7 +14,6 @@ class Manager:
             group_id,
             input_topic,
             output_topic,
-            number_of_iterations,
             number_of_workers,
             polling_timeout,
             model,
@@ -22,7 +21,6 @@ class Manager:
             y
     ):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
-        self.number_of_iterations = number_of_iterations
         self.number_of_workers = number_of_workers
         self.model = model
         self.X = X
@@ -89,11 +87,9 @@ class Worker:
             data_topic,
             input_topic,
             output_topic,
-            number_of_iterations,
             polling_timeout,
             id,
             model,
-            training_data,
             X_test,
             y_test
     ):
@@ -108,10 +104,8 @@ class Worker:
             group_id + 'data' + str(id),
             data_topic + '_' + str(id),
             polling_timeout)
-        self.number_of_iterations = number_of_iterations
         self.id = id
         self.model = model
-        self.training_data = training_data
         self.X_test = X_test
         self.y_test = y_test
 
@@ -153,8 +147,9 @@ class Worker:
 
 class Admin:
 
-    def __init__(self, server):
+    def __init__(self, server, verbose=False):
         self.admin_client = AdminClient({BOOTSTRAP_SERVER_KEY: server})
+        self.verbose = verbose
 
     def create_topics(self, topic_names, number_of_partitions, replication_factor):
         futures = self.admin_client.create_topics(
@@ -167,7 +162,8 @@ class Admin:
         for topic_name, future in futures.items():
             try:
                 future.result()
-                print(f'Topic {topic_name} successfully created!')
+                if self.verbose:
+                    print(f'Topic {topic_name} successfully created!')
             except KafkaException:
                 print(f'Failed to create topic {topic_name}')
 
@@ -177,7 +173,8 @@ class Admin:
         for topic_name, future in futures.items():
             try:
                 future.result()
-                print(f'Topic {topic_name} successfully deleted!')
+                if self.verbose:
+                    print(f'Topic {topic_name} successfully deleted!')
             except KafkaException:
                 print(f'Failed to delete topic {topic_name}')
 
@@ -196,3 +193,4 @@ class DataProducer:
             worker_index = str(i % self.number_of_workers)
             data_dict = {'X': self.X[i].tolist(), 'y': self.y[i].tolist()}
             self.producer.produce(data_dict, self.baseline_topic_name + '_' + worker_index)
+        #TODO: Add stop signal
