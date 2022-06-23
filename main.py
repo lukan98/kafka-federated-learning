@@ -63,7 +63,8 @@ if __name__ == '__main__':
         X_test=X_test,
         X_initial=X_initial,
         y_test=y_test,
-        y_initial=y_initial)
+        y_initial=y_initial,
+        verbose=True)
 
     workers = []
     for worker_index in range(number_of_workers):
