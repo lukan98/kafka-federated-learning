@@ -1,6 +1,6 @@
 import threading
 import time
-from sklearn.datasets import load_digits, load_iris
+from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from nodes import Manager, Worker, Admin, DataProducer
 from machine_learning import split_dataset, DigitClassifier
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     setup_server(server, topics)
 
-    X, y = load_iris(return_X_y=True)
+    X, y = load_digits(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
     training_samples = split_dataset(X_train, y_train, number_of_workers, number_of_iterations)
 
@@ -51,6 +51,18 @@ if __name__ == '__main__':
         polling_timeout=1.0,
         X=X,
         y=y)
+
+    manager = Manager(
+        server=server,
+        group_id=manager_group_id,
+        input_topic=worker_parameters_topic,
+        output_topic=manager_parameters_topic,
+        number_of_iterations=number_of_iterations,
+        number_of_workers=number_of_workers,
+        polling_timeout=polling_timeout,
+        model=DigitClassifier(),
+        X=X_test,
+        y=y_test)
 
     workers = []
     for worker_index in range(number_of_workers):
@@ -70,7 +82,10 @@ if __name__ == '__main__':
             y_test=y_test
         ))
 
-    threads = [threading.Thread(target=data_producer.run, daemon=False)]
+    threads = [
+        threading.Thread(target=data_producer.run, daemon=False),
+        threading.Thread(target=manager.run, daemon=False)
+    ]
 
     for worker in workers:
         threads.append(threading.Thread(target=worker.run, daemon=False))

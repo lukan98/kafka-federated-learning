@@ -39,8 +39,13 @@ class Manager:
 
     def run(self):
         self.model.fit(self.X, self.y)
-        for iteration in range(self.number_of_iterations):
+
+        iteration_counter = 0
+        best_score = 0
+
+        while True:
             parameters = self.consume(self.number_of_workers)
+
             coefficients = list(
                 map(lambda parameter_dict: deserialize_parameters(parameter_dict)[0],
                     parameters))
@@ -51,16 +56,28 @@ class Manager:
             aggregated_coefficients = aggregate_parameters(coefficients)
             aggregated_intercepts = aggregate_parameters(intercepts)
 
+            old_coefficients = self.model.get_coefficients()
+            old_intercepts = self.model.get_intercepts()
+
             self.model.set_coefficients(aggregated_coefficients)
             self.model.set_intercepts(aggregated_intercepts)
+            score = self.model.score(self.X, self.y)
 
-            print(f'Iteration {iteration + 1},'
-                  f'score: {self.model.score(self.X, self.y)}')
+            if score > best_score:
+                best_score = score
+            else:
+                self.model.set_coefficients(old_coefficients)
+                self.model.set_intercepts(old_intercepts)
+
+            print(f'Iteration {iteration_counter} score: {score}')
+            print(f'Best score: {best_score}')
 
             self.produce(
                 serialize_parameters(
                     aggregated_coefficients,
                     aggregated_intercepts))
+
+            iteration_counter += 1
 
 
 class Worker:
@@ -112,10 +129,26 @@ class Worker:
         while True:
             data_dict = self.consume_data()
 
-            X = np.array(data_dict['X'])
-            y = np.array(data_dict['y'])
+            X = np.array(data_dict['X']).reshape(1, -1)
+            y = np.ravel(np.array(data_dict['y']), order='c')
+            self.model.partial_fit(X=X, y=y)
 
-            
+            coefficients = self.model.get_coefficients()
+            intercepts = self.model.get_intercepts()
+
+            parameters = serialize_parameters(
+                coefficients,
+                intercepts)
+            self.produce(parameters)
+
+            aggregated_parameters = self.consume(1)[0]
+            aggregated_coefficients, aggregated_intercepts = \
+                deserialize_parameters(
+                    aggregated_parameters)
+            self.model.set_coefficients(
+                aggregated_coefficients)
+            self.model.set_intercepts(
+                aggregated_intercepts)
 
 
 class Admin:
