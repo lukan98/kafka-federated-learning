@@ -17,20 +17,31 @@ class Manager:
             number_of_workers,
             polling_timeout,
             model,
-            X,
-            y
+            X_test,
+            X_initial,
+            y_test,
+            y_initial,
+            verbose=False
     ):
         self.communicator = Communicator(server, group_id, input_topic, output_topic, polling_timeout)
         self.number_of_workers = number_of_workers
         self.model = model
-        self.X = X
-        self.y = y
+        self.X_test = X_test
+        self.X_initial = X_initial
+        self.y_test = y_test
+        self.y_initial = y_initial
+        self.verbose = verbose
 
     def get_classification_report(self):
-        return self.model.get_classification_report(self.X, self.y)
+        return self.model.get_classification_report(self.X_test, self.y_test)
 
     def run(self):
-        self.model.fit(self.X, self.y)
+        self.model.fit(self.X_initial, self.y_initial)
+
+        self.communicator.produce(
+            serialize_parameters(
+                self.model.get_coefficients(),
+                self.model.get_intercepts()))
 
         iteration_counter = 0
         best_score = 0
@@ -56,16 +67,17 @@ class Manager:
 
             self.model.set_coefficients(aggregated_coefficients)
             self.model.set_intercepts(aggregated_intercepts)
-            score = self.model.score(self.X, self.y)
+            score = self.model.score(self.X_test, self.y_test)
 
             if score > best_score:
                 best_score = score
             else:
                 self.model.set_coefficients(old_coefficients)
                 self.model.set_intercepts(old_intercepts)
-
-            print(f'Iteration {iteration_counter} score: {score}')
-            print(f'Best score: {best_score}')
+            
+            if self.verbose:
+                print(f'Iteration {iteration_counter} score: {score}')
+                print(f'Best score: {best_score}')
 
             self.communicator.produce(
                 serialize_parameters(
@@ -86,9 +98,7 @@ class Worker:
             output_topic,
             polling_timeout,
             id,
-            model,
-            X_test,
-            y_test
+            model
     ):
         self.communicator = Communicator(
             server,
@@ -96,18 +106,23 @@ class Worker:
             input_topic,
             output_topic,
             polling_timeout)
-        self.data_consumer = FLConsumer(
+        self.data_consumer = SampleConsumer(
             server,
             group_id + 'data' + str(id),
             data_topic + '_' + str(id),
             polling_timeout)
         self.id = id
         self.model = model
-        self.X_test = X_test
-        self.y_test = y_test
 
     def run(self):
-        self.model.fit(X=self.X_test, y=self.y_test)
+        initial_parameters = self.communicator.consume(1)[0]
+        initial_coefficients, initial_intercepts = \
+            deserialize_parameters(
+                initial_parameters)
+
+        self.model.set_coefficients(initial_coefficients)
+        self.model.set_intercepts(initial_intercepts)
+
         while True:
             data = self.data_consumer.consume()
 
@@ -171,10 +186,10 @@ class Admin:
                 print(f'Failed to delete topic {topic_name}')
 
 
-class DataProducer:
+class DataStream:
 
     def __init__(self, server, baseline_topic_name, number_of_workers, polling_timeout, X, y):
-        self.producer = FLProducer(server, polling_timeout)
+        self.producer = SampleProducer(server, polling_timeout)
         self.baseline_topic_name = baseline_topic_name
         self.number_of_workers = number_of_workers
         self.X = X

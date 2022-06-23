@@ -2,7 +2,7 @@ import threading
 import time
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from nodes import Manager, Worker, Admin, DataProducer
+from nodes import Manager, Worker, Admin, DataStream
 from machine_learning import cutoff_dataset, DigitClassifier
 
 
@@ -40,10 +40,11 @@ if __name__ == '__main__':
     setup_server(server, topics)
 
     X, y = load_digits(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_initial, y_train, y_initial = train_test_split(X_train, y_train, test_size=0.05)
     X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
 
-    data_producer = DataProducer(
+    data_producer = DataStream(
         server=server,
         baseline_topic_name=worker_input_topic,
         number_of_workers=number_of_workers,
@@ -59,11 +60,16 @@ if __name__ == '__main__':
         number_of_workers=number_of_workers,
         polling_timeout=polling_timeout,
         model=DigitClassifier(),
-        X=X_test,
-        y=y_test)
+        X_test=X_test,
+        X_initial=X_initial,
+        y_test=y_test,
+        y_initial=y_initial)
 
     workers = []
     for worker_index in range(number_of_workers):
+        model = DigitClassifier()
+        model.fit(X=X_initial, y=y_initial)
+
         workers.append(Worker(
             server=server,
             group_id=worker_group_id,
@@ -72,10 +78,7 @@ if __name__ == '__main__':
             output_topic=worker_parameters_topic,
             polling_timeout=polling_timeout,
             id=worker_index,
-            model=DigitClassifier(),
-            X_test=X_test,
-            y_test=y_test
-        ))
+            model=model))
 
     threads = [
         threading.Thread(target=data_producer.run, daemon=False),

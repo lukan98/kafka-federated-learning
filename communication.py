@@ -19,15 +19,7 @@ def make_consumer(server, consumer_group_id, topic):
     return consumer
 
 
-def serialize_message(message):
-    return json.dumps(message)
-
-
-def deserialize_message(message):
-    return json.loads(message)
-
-
-class FLProducer:
+class SampleProducer:
 
     def __init__(self, server, polling_timeout):
         self.polling_timeout = polling_timeout
@@ -42,12 +34,12 @@ class FLProducer:
 
         self.producer.produce(
             topic_name,
-            serialize_message(message),
+            json.dumps(message),
             callback=callback)
         self.producer.poll(self.polling_timeout)
 
 
-class FLConsumer:
+class SampleConsumer:
 
     def __init__(self, server, consumer_group_id, topic_name, polling_timeout):
         self.consumer = make_consumer(server, consumer_group_id, topic_name)
@@ -68,7 +60,7 @@ class FLConsumer:
 
             break
 
-        return deserialize_message(message.value().decode('utf-8'))
+        return json.loads(message.value().decode('utf-8'))
 
 
 class Communicator:
@@ -89,7 +81,7 @@ class Communicator:
 
         self.producer.produce(
             self.output_topic,
-            serialize_message(message),
+            json.dumps(message),
             callback=callback)
         self.producer.poll(self.polling_timeout)
 
@@ -109,7 +101,7 @@ class Communicator:
                     continue
 
                 messages.append(
-                    deserialize_message(
+                    json.loads(
                         message.value().decode('utf-8')))
                 break
         return messages

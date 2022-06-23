@@ -1,9 +1,6 @@
 import numpy as np
-import time
-from sklearn.model_selection import train_test_split
 from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
-from sklearn.datasets import load_digits, load_iris
 from sklearn.metrics import confusion_matrix, classification_report
 from functools import reduce
 
