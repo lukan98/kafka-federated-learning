@@ -169,14 +169,14 @@ class Worker:
                 intercepts)
             self.communicator.produce(parameters)
 
-            aggregated_parameters = self.communicator.consume(1)[0]
-            aggregated_coefficients, aggregated_intercepts = \
+            global_parameters = self.communicator.consume(1)[0]
+            global_coefficients, global_intercepts = \
                 deserialize_parameters(
-                    aggregated_parameters)
+                    global_parameters)
             self.model.set_coefficients(
-                aggregated_coefficients)
+                global_coefficients)
             self.model.set_intercepts(
-                aggregated_intercepts)
+                global_intercepts)
 
 
 class Admin:
