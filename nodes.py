@@ -46,12 +46,14 @@ class Manager:
                 self.model.get_intercepts()))
 
         iteration_counter = 0
-        best_score = 0
+        best_score = self.model.score(
+            self.X_test,
+            self.y_test)
         # best coefficients and intercepts
         # are the parameters of the
         # global model at any given moment
-        best_coefficients = None
-        best_intercepts = None
+        best_coefficients = self.model.get_coefficients()
+        best_intercepts = self.model.get_intercepts()
         # FedAvg loop
         while True:
             # wait for all the workers
@@ -60,7 +62,9 @@ class Manager:
                 self.number_of_workers)
             # if the workers have finished training
             # the models then stop the loop
-            if all(map(lambda msg: msg == STOP_SIGNAL, messages)):
+            if all(map(
+                    lambda msg: msg == STOP_SIGNAL,
+                    messages)):
                 break
 
             coefficients = list(
@@ -97,8 +101,10 @@ class Manager:
                 self.model.set_intercepts(best_intercepts)
 
             if self.verbose:
-                print(f'Iteration {iteration_counter} score: {score}')
-                print(f'Best score: {best_score}')
+                print(
+                    f'Iteration {iteration_counter} score: {score}')
+                print(
+                    f'Best score: {best_score}')
             # send the workers the global model's parameters
             self.communicator.produce(
                 serialize_parameters(
