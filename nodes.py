@@ -36,8 +36,10 @@ class Manager:
         return self.model.get_classification_report(self.X_test, self.y_test)
 
     def run(self):
+        # create the initial model
         self.model.fit(self.X_initial, self.y_initial)
-
+        # send the initial model's parameters
+        # to the workers
         self.communicator.produce(
             serialize_parameters(
                 self.model.get_coefficients(),
@@ -45,10 +47,19 @@ class Manager:
 
         iteration_counter = 0
         best_score = 0
-
+        # best coefficients and intercepts
+        # are the parameters of the
+        # global model at any given moment
+        best_coefficients = None
+        best_intercepts = None
+        # FedAvg loop
         while True:
-            messages = self.communicator.consume(self.number_of_workers)
-
+            # wait for all the workers
+            # to send their local model's parameters
+            messages = self.communicator.consume(
+                self.number_of_workers)
+            # if the workers have finished training
+            # the models then stop the loop
             if all(map(lambda msg: msg == STOP_SIGNAL, messages)):
                 break
 
@@ -59,30 +70,40 @@ class Manager:
                 map(lambda dict: deserialize_parameters(dict)[1],
                     messages))
 
-            aggregated_coefficients = aggregate_parameters(coefficients)
-            aggregated_intercepts = aggregate_parameters(intercepts)
+            agg_coefficients = aggregate_parameters(
+                coefficients)
+            agg_intercepts = aggregate_parameters(
+                intercepts)
 
-            old_coefficients = self.model.get_coefficients()
-            old_intercepts = self.model.get_intercepts()
-
-            self.model.set_coefficients(aggregated_coefficients)
-            self.model.set_intercepts(aggregated_intercepts)
-            score = self.model.score(self.X_test, self.y_test)
+            # update the model with the new parameters
+            self.model.set_coefficients(agg_coefficients)
+            self.model.set_intercepts(agg_intercepts)
+            # test the newly updated global model
+            score = self.model.score(
+                self.X_test,
+                self.y_test)
 
             if score > best_score:
+                # if the new model is the best one yet
+                # keep the new parameters and update
+                # the best score and best parameters
                 best_score = score
+                best_coefficients = agg_coefficients
+                best_intercepts = agg_intercepts
             else:
-                self.model.set_coefficients(old_coefficients)
-                self.model.set_intercepts(old_intercepts)
-            
+                # if the new model isn't the best one yet
+                # restore the previous parameters
+                self.model.set_coefficients(best_coefficients)
+                self.model.set_intercepts(best_intercepts)
+
             if self.verbose:
                 print(f'Iteration {iteration_counter} score: {score}')
                 print(f'Best score: {best_score}')
-
+            # send the workers the global model's parameters
             self.communicator.produce(
                 serialize_parameters(
-                    aggregated_coefficients,
-                    aggregated_intercepts))
+                    best_coefficients,
+                    best_intercepts))
 
             iteration_counter += 1
 
@@ -189,7 +210,11 @@ class Admin:
 class DataStream:
 
     def __init__(self, server, baseline_topic_name, number_of_workers, polling_timeout, X, y):
+        # create the producer
         self.producer = SampleProducer(server, polling_timeout)
+        # indicates the prefix of every worker input topic
+        # e.g. worker-input
+        # the worker index is then appended to the baseline
         self.baseline_topic_name = baseline_topic_name
         self.number_of_workers = number_of_workers
         self.X = X
@@ -197,13 +222,25 @@ class DataStream:
 
     def run(self):
         for i in range(len(self.X)):
+            # modulo operator for circular
+            # distribution of data to every worker
             worker_index = str(i % self.number_of_workers)
-            data_dict = {'X': self.X[i].tolist(), 'y': self.y[i].tolist()}
+            # create a dictionary out of a single sample
+            data_dict = {
+                'X': self.X[i].tolist(),
+                'y': self.y[i].tolist()}
             self.producer.produce(
                 data_dict,
-                self.baseline_topic_name + '_' + worker_index)
+                # e.g. worker-input_2
+                self.baseline_topic_name +
+                '_' +
+                worker_index)
 
+        # when there's no more data send all the workers
+        # a message that they can stop working
         for worker_index in range(self.number_of_workers):
             self.producer.produce(
                 STOP_SIGNAL,
-                self.baseline_topic_name + '_' + str(worker_index))
+                self.baseline_topic_name +
+                '_' +
+                str(worker_index))

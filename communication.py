@@ -12,6 +12,10 @@ def make_consumer(server, consumer_group_id, topic):
         {
             BOOTSTRAP_SERVER_KEY: server,
             GROUP_ID_KEY: consumer_group_id,
+            # important for setting
+            # initial offset to the earliest one
+            # so consumer starts reading partition
+            # from the first message
             OFFSET_RESET_KEY: 'earliest'
         }
     )

@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     topics = [worker_parameters_topic, manager_parameters_topic]
 
-    number_of_workers = 5
+    number_of_workers = 100
 
     number_of_partitions = 1
     replication_factor = 1
