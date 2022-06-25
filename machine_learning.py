@@ -1,8 +1,37 @@
 import numpy as np
+import pandas as pd
 from constants import COEFFICIENTS_KEY, INTERCEPTS_KEY
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split
 from functools import reduce
+from sklearn.datasets import load_digits
+
+
+def make_digit_datasets(number_of_workers, test_size=0.2, initial_samples_per_class=1):
+    digits = load_digits()
+    # create a Pandas DataFrame out of Bunch object
+    digits_df = pd\
+        .DataFrame(data=np.c_[digits['data'], digits['target']],
+                   columns=digits['feature_names'] + ['target'])
+    # take one sample from each class i.e. target
+    initial_df = digits_df.groupby('target').head(initial_samples_per_class)
+    # remove the previously taken samples
+    digits_df = pd\
+        .merge(digits_df, initial_df, indicator=True, how='outer')\
+        .query('_merge=="left_only"').drop('_merge', axis=1)
+
+    y_initial = pd.DataFrame(initial_df['target']).to_numpy()
+    X_initial = initial_df.drop(columns='target').to_numpy()
+
+    y = pd.DataFrame(digits_df['target']).to_numpy()
+    X = digits_df.drop(columns='target').to_numpy()
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
+
+    X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
+
+    return X_train, X_test, X_initial, y_train, y_test, y_initial
 
 
 def cutoff_dataset(X, y, number_of_workers):

@@ -1,27 +1,22 @@
 import threading
 import time
-from sklearn.datasets import load_digits
+import warnings
+from sklearn.exceptions import DataConversionWarning
 from sklearn.model_selection import train_test_split
 from nodes import Manager, Worker, Admin, DataStream
-from machine_learning import cutoff_dataset, DigitClassifier
+from machine_learning import cutoff_dataset, DigitClassifier, make_digit_datasets
+
+warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 
 
-def setup_server(server_name, topics):
+def setup_server(server_name, topic_names):
     admin = Admin(server=server_name)
-    admin.delete_topics(topics)
+    admin.delete_topics(topic_names)
     time.sleep(1)
     admin.create_topics(
-        topics,
+        topic_names,
         number_of_partitions,
         replication_factor)
-
-
-def make_datasets(X, y, number_of_workers, test_size=0.2, initial_size=0.05):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-    X_train, X_initial, y_train, y_initial = train_test_split(X_train, y_train, test_size=0.05)
-    X_train, y_train = cutoff_dataset(X_train, y_train, number_of_workers)
-
-    return X_train, X_test, X_initial, y_train, y_test, y_initial
 
 
 if __name__ == '__main__':
@@ -47,14 +42,15 @@ if __name__ == '__main__':
 
     setup_server(server, topics)
 
-    X, y = load_digits(return_X_y=True)
-    X_train, X_test, X_initial, y_train, y_test, y_initial = make_datasets(X, y, number_of_workers)
+    X_train, X_test, X_initial, y_train, y_test, y_initial = make_digit_datasets(
+        number_of_workers,
+        initial_samples_per_class=1)
 
     data_producer = DataStream(
         server=server,
         baseline_topic_name=worker_input_topic,
         number_of_workers=number_of_workers,
-        polling_timeout=1.0,
+        polling_timeout=polling_timeout,
         X=X_train,
         y=y_train)
 

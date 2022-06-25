@@ -164,7 +164,7 @@ class Worker:
             # parse training data into numpy array
             # reshaping and raveling to fix the array shape
             X = np.array(data['X']).reshape(1, -1)
-            y = np.ravel(np.array(data['y']), order='c')
+            y = np.ravel(np.array(data['y']))
             # train the model with the single sample
             self.model.partial_fit(X=X, y=y)
 
