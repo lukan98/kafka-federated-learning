@@ -142,37 +142,46 @@ class Worker:
         self.model = model
 
     def run(self):
+        # wait for the global model's initial parameters
         initial_parameters = self.communicator.consume(1)[0]
         initial_coefficients, initial_intercepts = \
             deserialize_parameters(
                 initial_parameters)
-
+        # set the update the local model with the
+        # initial global parameters
         self.model.set_coefficients(initial_coefficients)
         self.model.set_intercepts(initial_intercepts)
 
         while True:
+            # receive training data
             data = self.data_consumer.consume()
-
+            # the stop signal is received
+            # when there's no more data
             if data == STOP_SIGNAL:
+                # tell the manager that you're done
                 self.communicator.produce(STOP_SIGNAL)
                 break
-
+            # parse training data into numpy array
+            # reshaping and raveling to fix the array shape
             X = np.array(data['X']).reshape(1, -1)
             y = np.ravel(np.array(data['y']), order='c')
+            # train the model with the single sample
             self.model.partial_fit(X=X, y=y)
 
             coefficients = self.model.get_coefficients()
             intercepts = self.model.get_intercepts()
-
+            # serialize the model's parameters
             parameters = serialize_parameters(
                 coefficients,
                 intercepts)
+            # send the parameters to the manager
             self.communicator.produce(parameters)
-
+            # wait to receive the new global parameters
             global_parameters = self.communicator.consume(1)[0]
             global_coefficients, global_intercepts = \
                 deserialize_parameters(
                     global_parameters)
+            # update the local model
             self.model.set_coefficients(
                 global_coefficients)
             self.model.set_intercepts(
