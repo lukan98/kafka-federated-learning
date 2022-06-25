@@ -2,20 +2,20 @@ import matplotlib.pyplot as plt
 
 
 def draw_worker_graph():
-    plt.plot([5, 10, 25, 50, 100], [.867, .815, .761, .765, .686])
+    plt.plot([5, 10, 25, 50, 75, 100, 150], [.741, .763, .789, .803, .783, .808, .885])
     plt.ylabel('Točnost modela')
     plt.xlabel('Broj radnika')
-    plt.axis([0, 100, 0, 1])
+    plt.axis([0, 150, 0, 1])
     plt.show()
 
 
-def draw_iteration_graph():
-    plt.plot([2, 4, 6, 8, 10], [.604, .708, .812, .872, .899])
-    plt.ylabel('Točnost modela')
-    plt.xlabel('Broj iteracija')
-    plt.axis([2, 10, 0, 1])
+def draw_time_graph():
+    plt.plot([5, 10, 25, 50, 75, 100, 150], [20.235, 22.505, 32.525, 38.485, 39.233, 42.063, 73.005])
+    plt.ylabel('Vrijeme izvođenja')
+    plt.xlabel('Broj radnika')
+    plt.axis([0, 150, 0, 75])
     plt.show()
 
 
 if __name__ == '__main__':
-    draw_iteration_graph()
+    draw_time_graph()

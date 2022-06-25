@@ -2,9 +2,8 @@ import threading
 import time
 import warnings
 from sklearn.exceptions import DataConversionWarning
-from sklearn.model_selection import train_test_split
 from nodes import Manager, Worker, Admin, DataStream
-from machine_learning import cutoff_dataset, DigitClassifier, make_digit_datasets
+from machine_learning import DigitClassifier, make_digit_datasets
 
 warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 
@@ -31,7 +30,7 @@ if __name__ == '__main__':
 
     topics = [worker_parameters_topic, manager_parameters_topic]
 
-    number_of_workers = 100
+    number_of_workers = 50
 
     number_of_partitions = 1
     replication_factor = 1
@@ -44,7 +43,7 @@ if __name__ == '__main__':
 
     X_train, X_test, X_initial, y_train, y_test, y_initial = make_digit_datasets(
         number_of_workers,
-        initial_samples_per_class=1)
+        initial_samples_per_class=5)
 
     data_producer = DataStream(
         server=server,
