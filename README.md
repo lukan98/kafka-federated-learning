@@ -16,7 +16,7 @@ The dataset is scikit-learn's built-in handwritten-digits dataset. The default c
 
 ## Prerequisites
 
-1. Python 3.8 or newer
+1. Python 3.11.9 (pinned in `.tool-versions`; the code requires 3.8 or newer)
 2. Java 8 or newer (required by Kafka)
 3. Apache Kafka with Zookeeper
 
@@ -35,10 +35,13 @@ export KAFKA_DIR="$PWD/kafka_2.13-3.1.0"
 - `scikit-learn`
 - `matplotlib` (only needed for `graphs.py`)
 
-Install them with:
+Install the pinned Python version and dependencies:
 
 ```bash
-pip install confluent-kafka numpy pandas scikit-learn matplotlib
+asdf install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Running
